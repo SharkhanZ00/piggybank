@@ -10,6 +10,7 @@ contract Piggybank {
 }
 
 type AllowedMessage = TopUp | Withdraw
+const SEND_FEES: coins = grams("0.005")
 
 fun onInternalMessage(in: InMessage) {
     val message = lazy AllowedMessage.fromSlice(in.body);
@@ -23,7 +24,6 @@ fun onInternalMessage(in: InMessage) {
         return;
     }
 
-    val SEND_FEES: coins = grams("0.005");
 
     match (message) {
         TopUp => {
@@ -35,12 +35,13 @@ fun onInternalMessage(in: InMessage) {
             if (in.senderAddress != storage.owner) {
                 throw Errors.NotOwner;
             }
-            if (storage.balance > message.amount + SEND_FEES) {
-                storage.balance -= message.amount;
+            val withdrawAmount = message.amount + SEND_FEES;
+            if (storage.balance > withdrawAmount ) {
+                storage.balance -= withdrawAmount;
 
                 var withdrawConfirm = createMessage({
                     dest: storage.owner,
-                    value: message.amount + SEND_FEES,
+                    value: withdrawAmount,
                     body: WithdrawResult {
                         queryId: message.queryId,
                         sent: message.amount,
@@ -57,7 +58,6 @@ fun onInternalMessage(in: InMessage) {
             throw Errors.InsufficientBalance;
         }
         else => {
-            throw Errors.InvalidMessage;
         }
     }
 }
@@ -65,21 +65,25 @@ fun onInternalMessage(in: InMessage) {
 fun onBouncedMessage(in: InMessageBounced) {
     var storage = lazy Storage.load();
 
-    if (storage.owner==null ||  in.senderAddress != storage.owner) {
+    if (storage.owner==null ||  in.senderAddress != storage.owner!) {
         return;
     }
 
     in.bouncedBody.skipBouncedPrefix();
 
     val message = lazy AllowedMessage.fromSlice(in.bouncedBody);
+    val originalOpcode = in.bouncedBody.loadUint(32);
+
     match (message) {
         TopUp => {}
         Withdraw => {
-            storage.balance += message.amount;
+            storage.balance += message.amount + SEND_FEES;
             Storage.save(storage);
         }
-        else => {}
+        else => {
+        }
     }
+
 }
 
 get fun owner(): address {
