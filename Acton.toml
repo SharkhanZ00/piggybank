@@ -29,5 +29,5 @@ gen = "gen"
 tests = "tests"
 wrappers = "wrappers"
 
-# Check full Acton.toml reference and all available keys:
-# https://ton-blockchain.github.io/acton/docs/acton-toml
+[wrappers.typescript]
+output-dir = "app/wrappers-ts"
