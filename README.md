@@ -18,6 +18,7 @@ tests, and a deployment script you can extend.
 ## Build
 
 ```bash
+acton wrapper Piggybank
 acton build
 ```
 
